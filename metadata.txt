@@ -19,6 +19,6 @@ tags=plugins, browser, metadata, filter, repository
 homepage=https://github.com/raw-slnc/plugin_info
 category=General
 icon=icon.png
-experimental=True
+experimental=False
 deprecated=False
 server=False
