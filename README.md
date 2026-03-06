@@ -2,6 +2,8 @@
 
 A QGIS plugin that fetches the official QGIS plugin repository and displays all available plugins in a filterable, sortable table.
 
+![Plugin Info Browser](screenshot.png)
+
 ## Features
 
 - Fetches live data from the QGIS official plugin repository

@@ -138,11 +138,17 @@ class PluginInfoDockWidget(
         self.exclude_experimental_button = QtWidgets.QPushButton(self.tr("Exclude experimental"))
         self.exclude_experimental_button.setCheckable(True)
         self.exclude_experimental_button.setChecked(False)
+        self.exclude_experimental_button.setStyleSheet(
+            "QPushButton:checked { background-color: rgb(242, 250, 235); }"
+        )
         exclude_controls_layout.addWidget(self.exclude_experimental_button)
 
         self.exclude_deprecated_button = QtWidgets.QPushButton(self.tr("Exclude deprecated"))
         self.exclude_deprecated_button.setCheckable(True)
         self.exclude_deprecated_button.setChecked(False)
+        self.exclude_deprecated_button.setStyleSheet(
+            "QPushButton:checked { background-color: rgb(255, 240, 240); }"
+        )
         exclude_controls_layout.addWidget(self.exclude_deprecated_button)
         exclude_controls_layout.addStretch(1)
         button_grid_layout.addLayout(exclude_controls_layout, 0, 0)
@@ -156,6 +162,9 @@ class PluginInfoDockWidget(
         self.qgis_min_ltr_button = QtWidgets.QPushButton(self.tr("LTR"))
         self.qgis_min_ltr_button.setCheckable(True)
         self.qgis_min_ltr_button.setChecked(False)
+        self.qgis_min_ltr_button.setStyleSheet(
+            "QPushButton:checked { background-color: #2ecc40; color: white; font-weight: bold; }"
+        )
         minver_controls_layout.addWidget(self.qgis_min_ltr_button)
         minver_controls_layout.addStretch(1)
         button_grid_layout.addLayout(minver_controls_layout, 0, 1)
@@ -181,6 +190,9 @@ class PluginInfoDockWidget(
         self.only_experimental_button = QtWidgets.QPushButton(self.tr("Only experimental"))
         self.only_experimental_button.setCheckable(True)
         self.only_experimental_button.setChecked(False)
+        self.only_experimental_button.setStyleSheet(
+            "QPushButton:checked { background-color: rgb(242, 250, 235); }"
+        )
         setting_controls_layout.addWidget(self.only_experimental_button)
         setting_controls_layout.addStretch(1)
         button_grid_layout.addLayout(setting_controls_layout, 1, 0)
