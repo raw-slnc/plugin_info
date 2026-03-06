@@ -17,7 +17,7 @@ hasProcessingProvider=no
 tags=plugins, browser, metadata, filter, repository
 
 homepage=https://github.com/raw-slnc/plugin_info
-category=Vector
+category=General
 icon=icon.png
 experimental=True
 deprecated=False
