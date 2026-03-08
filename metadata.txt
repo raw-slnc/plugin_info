@@ -6,7 +6,7 @@ version=0.1.1
 author=Hideharu Masai
 email=hideharumasai@void.mints.ne.jp
 
-about=Plugin Info Browser fetches the official QGIS plugin repository and displays all available plugins in a filterable table. You can filter by name, author, rating, QGIS minimum version, category, creation date, and experimental/deprecated status. Double-clicking a plugin opens the Plugin Manager and copies the plugin name to your clipboard for easy search. Installed plugins are highlighted in the list.
+about=Plugin Info Browser fetches the official QGIS plugin repository and displays all available plugins in a filterable table. You can filter by name, author, rating, QGIS minimum version, category, creation date, and experimental/deprecated status. Double-clicking a plugin opens the Plugin Manager and copies the plugin name to your clipboard for easy search. Installed plugins are highlighted in the list. Support: https://paypal.me/rawslnc
 
 tracker=https://github.com/raw-slnc/plugin_info/issues
 repository=https://github.com/raw-slnc/plugin_info
