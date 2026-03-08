@@ -37,3 +37,12 @@ Install via QGIS Plugin Manager (search for "Plugin Info Browser"), or download 
 ## License
 
 GNU General Public License v2 or later
+
+## Support
+
+If this plugin is helpful for your work, you can support the development here:
+https://paypal.me/rawslnc
+
+## Author
+
+(C) 2026 by Hideharu Masai
