@@ -60,7 +60,7 @@ class PluginInfoDockWidget(
     def __init__(self, iface=None, parent=None):
         super(PluginInfoDockWidget, self).__init__(parent)
         self.iface = iface
-        self.setWindowTitle(self.tr("Plugin Browser"))
+        self.setWindowTitle(self.tr("Plugin Info Browser"))
         self._repo_urls = self._build_repository_urls()
         self._repo_try_index = 0
         self._plugins_reply = None

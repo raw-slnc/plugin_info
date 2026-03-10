@@ -36,7 +36,7 @@ class NetworkMixin:
             self.status_label.setText(self.tr("No plugins returned from repository."))
             QgsMessageLog.logMessage(
                 f"No plugins returned. URLs tried: {', '.join(self._repo_urls)}",
-                'Plugin Browser',
+                'Plugin Info Browser',
                 Qgis.Warning
             )
             return
@@ -71,7 +71,7 @@ class NetworkMixin:
         if err != 0:
             QgsMessageLog.logMessage(
                 f"Repository request failed: {reply.errorString()} (url: {current_url})",
-                'Plugin Browser',
+                'Plugin Info Browser',
                 Qgis.Warning
             )
             reply.deleteLater()
@@ -84,7 +84,7 @@ class NetworkMixin:
         except Exception as ex:
             QgsMessageLog.logMessage(
                 f"XML parse failed: {ex} (url: {current_url})",
-                'Plugin Browser',
+                'Plugin Info Browser',
                 Qgis.Warning
             )
             reply.deleteLater()
@@ -287,7 +287,7 @@ class NetworkMixin:
         if err != 0:
             error_msg = self.tr("Error fetching details: {}").format(reply.errorString())
             self.status_label.setText(error_msg)
-            QgsMessageLog.logMessage(error_msg, 'Plugin Browser', Qgis.Critical)
+            QgsMessageLog.logMessage(error_msg, 'Plugin Info Browser', Qgis.Critical)
             reply.deleteLater()
             return
 
@@ -295,7 +295,7 @@ class NetworkMixin:
             result = json.loads(bytes(reply.readAll()).decode("utf-8", errors="replace"))
         except Exception as ex:
             self.status_label.setText(self.tr("Error parsing details JSON: {}").format(ex))
-            QgsMessageLog.logMessage(str(ex), 'Plugin Browser', Qgis.Critical)
+            QgsMessageLog.logMessage(str(ex), 'Plugin Info Browser', Qgis.Critical)
             reply.deleteLater()
             return
 
