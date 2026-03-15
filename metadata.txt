@@ -16,6 +16,11 @@ changelog=0.1.2
     - Renamed UI title to "Plugin Info Browser"
     - Moved toolbar and menu registration from Vector to General (Plugins toolbar/menu)
     - Updated plugin icon
+0.1.1
+    - Fixed toolbar icon loading using filesystem path
+    - Updated icon design
+0.1.0
+    - Initial release
 
 hasProcessingProvider=no
 
