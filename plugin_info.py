@@ -145,10 +145,10 @@ class PluginInfo:
             action.setWhatsThis(whats_this)
 
         if add_to_toolbar:
-            self.iface.addVectorToolBarIcon(action)
+            self.iface.addToolBarIcon(action)
 
         if add_to_menu:
-            self.iface.addPluginToVectorMenu(
+            self.iface.addPluginToMenu(
                 self.menu,
                 action)
 
@@ -180,10 +180,10 @@ class PluginInfo:
         """Removes the plugin menu item and icon from QGIS GUI."""
 
         for action in self.actions:
-            self.iface.removePluginVectorMenu(
+            self.iface.removePluginMenu(
                 self.tr(u'&Plugin Tools'),
                 action)
-            self.iface.removeVectorToolBarIcon(action)
+            self.iface.removeToolBarIcon(action)
 
         # Properly clean up the dock widget if it exists
         if self.dockwidget:
