@@ -51,7 +51,7 @@ class PluginManagerMixin:
             try:
                 method()
                 return True
-            except Exception:
+            except Exception:  # nosec B110
                 pass
 
         # 2) Fallback: trigger known main-window actions.

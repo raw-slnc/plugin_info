@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
-import xml.etree.ElementTree as ET
+from defusedxml import ElementTree as ET
 
 from qgis.PyQt.QtCore import QUrl, QDate, Qt
 from qgis.PyQt.QtNetwork import QNetworkRequest

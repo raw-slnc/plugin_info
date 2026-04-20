@@ -127,7 +127,7 @@ class TableMixin:
                 continue
             try:
                 plugin_id, name = self._parse_metadata_file(meta_path)
-            except Exception:
+            except Exception:  # nosec B112
                 continue
             if plugin_id:
                 installed_ids.add(plugin_id)
