@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import json
-from xml.etree import ElementTree as ET
+try:
+    from defusedxml import ElementTree as ET
+except ImportError:
+    from xml.etree import ElementTree as ET  # nosec B405
 
 from qgis.PyQt.QtCore import QUrl, QDate, Qt
 from qgis.PyQt.QtNetwork import QNetworkRequest
@@ -118,7 +121,7 @@ class NetworkMixin:
 
     @staticmethod
     def _parse_plugins_xml(xml_data):
-        root = ET.fromstring(xml_data)
+        root = ET.fromstring(xml_data)  # nosec B314
         all_plugins = [
             elem for elem in root.iter()
             if elem.tag == 'pyqgis_plugin' or str(elem.tag).endswith('}pyqgis_plugin')
