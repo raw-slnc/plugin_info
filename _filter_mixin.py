@@ -24,13 +24,14 @@ class FilterMixin:
             plugin_id_text = self.table.item(i, 1).text().lower()
             version_text = self.table.item(i, 2).text().lower()
             author_text = self.table.item(i, 5).text().lower()
-            is_experimental = bool(self.table.item(i, 0).data(Qt.UserRole + 2))
-            is_deprecated = bool(self.table.item(i, 0).data(Qt.UserRole + 3))
-            row_create_date = self.table.item(i, 0).data(Qt.UserRole + 4)
-            row_minver = str(self.table.item(i, 0).data(Qt.UserRole + 5) or "")
-            row_category = str(self.table.item(i, 0).data(Qt.UserRole + 7) or "")
-            row_rating = float(self.table.item(i, 4).data(Qt.UserRole) or 0.0)
-            row_id = str(self.table.item(i, 0).data(Qt.UserRole + 1))
+            is_experimental = bool(self.table.item(i, 0).data(Qt.ItemDataRole.UserRole + 2))
+            is_deprecated = bool(self.table.item(i, 0).data(Qt.ItemDataRole.UserRole + 3))
+            row_create_date = self.table.item(i, 0).data(Qt.ItemDataRole.UserRole + 4)
+            row_minver = str(self.table.item(i, 0).data(Qt.ItemDataRole.UserRole + 5) or "")
+            row_maxver = str(self.table.item(i, 0).data(Qt.ItemDataRole.UserRole + 10) or "")
+            row_category = str(self.table.item(i, 0).data(Qt.ItemDataRole.UserRole + 7) or "")
+            row_rating = float(self.table.item(i, 4).data(Qt.ItemDataRole.UserRole) or 0.0)
+            row_id = str(self.table.item(i, 0).data(Qt.ItemDataRole.UserRole + 1))
 
             match_text = (
                 search_term in name_text
@@ -53,7 +54,11 @@ class FilterMixin:
                     and row_create_date >= created_since_date
                 )
 
-            minver_match = (not selected_minver) or (row_minver == selected_minver)
+            minver_match = (not selected_minver) or self._is_plugin_compatible_with_version(
+                selected_minver,
+                row_minver,
+                row_maxver,
+            )
             category_match = (not selected_category) or (row_category == selected_category)
             favorite_match = (not show_favorites) or (row_id in self._favorites)
 

@@ -52,10 +52,10 @@ class PluginInfoDockWidget(
     }
 
     _NAME_COLUMN = 0
-    _ABOUT_DATA_ROLE = Qt.UserRole + 8
+    _ABOUT_DATA_ROLE = Qt.ItemDataRole.UserRole + 8
     _ABOUT_MAX_LINES = 5
     _ABOUT_ESTIMATE_LINES = 3
-    _INSTALLED_DATA_ROLE = Qt.UserRole + 9
+    _INSTALLED_DATA_ROLE = Qt.ItemDataRole.UserRole + 9
 
     def __init__(self, iface=None, parent=None):
         super(PluginInfoDockWidget, self).__init__(parent)
@@ -156,8 +156,8 @@ class PluginInfoDockWidget(
         # Min version combo (right column)
         minver_controls_layout = QtWidgets.QHBoxLayout()
         self.qgis_min_version_combo = QtWidgets.QComboBox()
-        self.qgis_min_version_combo.addItem(self.tr("All QGIS min versions"), "")
-        minver_controls_layout.addWidget(QtWidgets.QLabel(self.tr("QGIS min:")))
+        self.qgis_min_version_combo.addItem(self.tr("All target versions"), "")
+        minver_controls_layout.addWidget(QtWidgets.QLabel(self.tr("Target ver:")))
         minver_controls_layout.addWidget(self.qgis_min_version_combo)
         self.qgis_min_ltr_button = QtWidgets.QPushButton(self.tr("LTR"))
         self.qgis_min_ltr_button.setCheckable(True)
@@ -234,18 +234,18 @@ class PluginInfoDockWidget(
             self.tr("Name"), self.tr("plugin_id"), self.tr("Version"),
             self.tr("Download"), self.tr("Rating"), self.tr("Author")
         ])
-        self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSortingEnabled(True)
         self.table.verticalHeader().setVisible(False)
         self.table.setMouseTracking(True)
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(5, QtWidgets.QHeaderView.Stretch)
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(5, QtWidgets.QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self.table)
 
         # --- About panel ---
@@ -255,16 +255,16 @@ class PluginInfoDockWidget(
         info_layout2.setSpacing(6)
         self.about_label = QtWidgets.QLabel(self.tr("Select a plugin to show the about text."))
         self.about_label.setWordWrap(True)
-        self.about_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.about_label.setTextFormat(Qt.PlainText)
-        self.about_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.about_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.about_label.setTextFormat(Qt.TextFormat.PlainText)
+        self.about_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self._sync_about_label_height()
         info_layout2.addWidget(self.about_label)
         about_link_row = QtWidgets.QHBoxLayout()
         about_link_row.addStretch(1)
         self.about_open_link = QtWidgets.QLabel("<a href='open'>[Open Developer Page]</a>")
-        self.about_open_link.setTextFormat(Qt.RichText)
-        self.about_open_link.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        self.about_open_link.setTextFormat(Qt.TextFormat.RichText)
+        self.about_open_link.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
         self.about_open_link.setOpenExternalLinks(False)
         self.about_open_link.linkActivated.connect(self._on_open_dev_page_link_activated)
         self.about_open_link.setEnabled(False)
@@ -319,20 +319,20 @@ class PluginInfoDockWidget(
 
         # --- Debug headers panel ---
         self.debug_headers_panel = QtWidgets.QFrame()
-        self.debug_headers_panel.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.debug_headers_panel.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
         self.debug_headers_panel.setVisible(False)
         debug_panel_layout = QtWidgets.QGridLayout(self.debug_headers_panel)
         debug_panel_layout.setContentsMargins(6, 6, 6, 6)
         self.debug_headers_label_left = QtWidgets.QLabel("")
         self.debug_headers_label_left.setWordWrap(True)
         self.debug_headers_label_left.setStyleSheet("color:#666; font-size:9pt;")
-        self.debug_headers_label_left.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.debug_headers_label_left.setAlignment(Qt.AlignTop)
+        self.debug_headers_label_left.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.debug_headers_label_left.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.debug_headers_label_right = QtWidgets.QLabel("")
         self.debug_headers_label_right.setWordWrap(True)
         self.debug_headers_label_right.setStyleSheet("color:#666; font-size:9pt;")
-        self.debug_headers_label_right.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.debug_headers_label_right.setAlignment(Qt.AlignTop)
+        self.debug_headers_label_right.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.debug_headers_label_right.setAlignment(Qt.AlignmentFlag.AlignTop)
         debug_panel_layout.addWidget(self.debug_headers_label_left, 0, 0)
         debug_panel_layout.addWidget(self.debug_headers_label_right, 0, 1)
         layout.addWidget(self.debug_headers_panel)
@@ -360,7 +360,7 @@ class PluginInfoDockWidget(
         self.table.cellEntered.connect(self._on_table_cell_entered)
         self.table.itemDoubleClicked.connect(self._on_table_item_double_clicked)
         self.table.itemSelectionChanged.connect(self._on_table_selection_changed)
-        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.show_table_context_menu)
         self.table.installEventFilter(self)
 
@@ -384,9 +384,9 @@ class PluginInfoDockWidget(
 
     def _on_table_cell_entered(self, _row, column):
         if column == self._NAME_COLUMN:
-            self.table.viewport().setCursor(Qt.PointingHandCursor)
+            self.table.viewport().setCursor(Qt.CursorShape.PointingHandCursor)
         else:
-            self.table.viewport().setCursor(Qt.ArrowCursor)
+            self.table.viewport().setCursor(Qt.CursorShape.ArrowCursor)
 
     # --- About label ---
 
@@ -476,13 +476,13 @@ class PluginInfoDockWidget(
         self._refresh_about_label()
 
     def eventFilter(self, source, event):
-        if source == self.table and event.type() == QEvent.KeyPress:
-            if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+        if source == self.table and event.type() == QEvent.Type.KeyPress:
+            if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
                 selected_items = self.table.selectedItems()
                 if selected_items:
                     self.open_plugin_manager_for_item(selected_items[0])
                     return True
-            elif event.key() == Qt.Key_Escape:
+            elif event.key() == Qt.Key.Key_Escape:
                 self.table.clearSelection()
                 return True
         return super().eventFilter(source, event)
@@ -497,11 +497,9 @@ class PluginInfoDockWidget(
     def closeEvent(self, _event):
         self._save_filter_toggle_settings()
         self._save_created_since_settings()
-        if self._plugins_reply is not None:
-            self._plugins_reply.abort()
-            self._plugins_reply.deleteLater()
-            self._plugins_reply = None
-        if self._details_reply is not None:
-            self._details_reply.abort()
-            self._details_reply.deleteLater()
-            self._details_reply = None
+        plugins_reply = self._plugins_reply
+        self._plugins_reply = None
+        self._cancel_reply(plugins_reply)
+        details_reply = self._details_reply
+        self._details_reply = None
+        self._cancel_reply(details_reply)

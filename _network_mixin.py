@@ -1,15 +1,48 @@
 # -*- coding: utf-8 -*-
 import json
+import ssl
+import urllib.request
 try:
     from defusedxml import ElementTree as ET
 except ImportError:
     from xml.etree import ElementTree as ET  # nosec B405
 
-from qgis.PyQt.QtCore import QUrl, QDate, Qt
-from qgis.PyQt.QtNetwork import QNetworkRequest
-from qgis.core import QgsNetworkAccessManager, Qgis, QgsMessageLog
+from qgis.PyQt.QtCore import QDate, Qt, QThread, pyqtSignal
+from qgis.core import Qgis, QgsMessageLog
 
 from ._dialogs import PluginDetailDialog
+
+
+class _UrlFetchThread(QThread):
+    """Fetch a URL using urllib in a background thread (bypasses Qt SSL stack)."""
+    success = pyqtSignal(bytes, str)   # data, url
+    failure = pyqtSignal(str, str)     # error_msg, url
+
+    def __init__(self, url, timeout=20, parent=None):
+        super().__init__(parent)
+        self._url = url
+        self._timeout = timeout
+        self._cancelled = False
+
+    def cancel(self):
+        self._cancelled = True
+
+    def run(self):
+        if self._cancelled:
+            return
+        ctx = ssl.create_default_context()
+        try:
+            req = urllib.request.Request(
+                self._url,
+                headers={"User-Agent": "QGIS-Plugin-Browser"},
+            )
+            with urllib.request.urlopen(req, context=ctx, timeout=self._timeout) as resp:  # nosec B310
+                data = resp.read()
+            if not self._cancelled:
+                self.success.emit(data, self._url)
+        except Exception as ex:
+            if not self._cancelled:
+                self.failure.emit(str(ex), self._url)
 
 
 class NetworkMixin:
@@ -24,11 +57,16 @@ class NetworkMixin:
         self._repo_try_index = 0
         self._start_plugins_request()
 
+    def _cancel_reply(self, reply):
+        if reply is not None:
+            reply.cancel()
+            reply.quit()
+            reply.wait(500)
+
     def _start_plugins_request(self):
-        if self._plugins_reply is not None:
-            self._plugins_reply.abort()
-            self._plugins_reply.deleteLater()
-            self._plugins_reply = None
+        plugins_reply = self._plugins_reply
+        self._plugins_reply = None
+        self._cancel_reply(plugins_reply)
 
         if self._repo_try_index >= len(self._repo_urls):
             self.progress_bar.setVisible(False)
@@ -40,7 +78,7 @@ class NetworkMixin:
             QgsMessageLog.logMessage(
                 f"No plugins returned. URLs tried: {', '.join(self._repo_urls)}",
                 'Plugin Info Browser',
-                Qgis.Warning
+                Qgis.MessageLevel.Warning
             )
             return
 
@@ -53,49 +91,30 @@ class NetworkMixin:
             )
         )
 
-        request = QNetworkRequest(QUrl(repo_url))
-        request.setRawHeader(b"User-Agent", b"QGIS-Plugin-Browser")
-        self._plugins_reply = QgsNetworkAccessManager.instance().get(request)
-        self._plugins_reply.downloadProgress.connect(self._on_network_progress)
-        self._plugins_reply.finished.connect(self._on_plugins_reply_finished)
-        self._network_timeout.start(20000)
+        thread = _UrlFetchThread(repo_url, timeout=20, parent=self)
+        thread.success.connect(self._on_plugins_fetch_success)
+        thread.failure.connect(self._on_plugins_fetch_failure)
+        self._plugins_reply = thread
+        thread.start()
+        self._network_timeout.start(25000)
 
-    def _on_plugins_reply_finished(self):
+    def _on_plugins_fetch_success(self, data, url):
         self._network_timeout.stop()
-        reply = self._plugins_reply
         self._plugins_reply = None
         self._pending_mode = None
 
-        if reply is None:
-            return
-
-        current_url = self._repo_urls[self._repo_try_index]
-        err = reply.error()
-        if err != 0:
-            QgsMessageLog.logMessage(
-                f"Repository request failed: {reply.errorString()} (url: {current_url})",
-                'Plugin Info Browser',
-                Qgis.Warning
-            )
-            reply.deleteLater()
-            self._repo_try_index += 1
-            self._start_plugins_request()
-            return
-
         try:
-            plugins, headers = self._parse_plugins_xml(bytes(reply.readAll()))
+            plugins, headers = self._parse_plugins_xml(data)
         except Exception as ex:
             QgsMessageLog.logMessage(
-                f"XML parse failed: {ex} (url: {current_url})",
+                f"XML parse failed: {ex} (url: {url})",
                 'Plugin Info Browser',
-                Qgis.Warning
+                Qgis.MessageLevel.Warning
             )
-            reply.deleteLater()
             self._repo_try_index += 1
             self._start_plugins_request()
             return
 
-        reply.deleteLater()
         if not plugins:
             self._repo_try_index += 1
             self._start_plugins_request()
@@ -107,6 +126,18 @@ class NetworkMixin:
         self.populate_table(plugins)
         self._update_debug_headers(headers)
         self.status_label.setText(self.tr("{} plugins found.").format(len(plugins)))
+
+    def _on_plugins_fetch_failure(self, error_msg, url):
+        self._network_timeout.stop()
+        self._plugins_reply = None
+        self._pending_mode = None
+        QgsMessageLog.logMessage(
+            f"Repository request failed: {error_msg} (url: {url})",
+            'Plugin Info Browser',
+            Qgis.MessageLevel.Warning
+        )
+        self._repo_try_index += 1
+        self._start_plugins_request()
 
     def _update_debug_headers(self, headers):
         """Populates the two-column debug header view."""
@@ -250,7 +281,7 @@ class NetworkMixin:
             return
 
         name_item = self.table.item(selected_items[0].row(), 0)
-        plugin_id = name_item.data(Qt.UserRole + 1)
+        plugin_id = name_item.data(Qt.ItemDataRole.UserRole + 1)
 
         if not plugin_id:
             self.status_label.setText(self.tr("Could not find plugin ID."))
@@ -262,68 +293,56 @@ class NetworkMixin:
         self._pending_mode = "details"
         self._details_plugin_id = plugin_id
 
-        if self._details_reply is not None:
-            self._details_reply.abort()
-            self._details_reply.deleteLater()
-            self._details_reply = None
+        details_reply = self._details_reply
+        self._details_reply = None
+        self._cancel_reply(details_reply)
 
-        request = QNetworkRequest(QUrl(f"https://plugins.qgis.org/api/plugins/{plugin_id}/"))
-        request.setRawHeader(b"User-Agent", b"QGIS-Plugin-Browser")
-        self._details_reply = QgsNetworkAccessManager.instance().get(request)
-        self._details_reply.downloadProgress.connect(self._on_network_progress)
-        self._details_reply.finished.connect(self._on_details_reply_finished)
-        self._network_timeout.start(15000)
+        details_url = f"https://plugins.qgis.org/api/plugins/{plugin_id}/"
+        thread = _UrlFetchThread(details_url, timeout=15, parent=self)
+        thread.success.connect(self._on_details_fetch_success)
+        thread.failure.connect(self._on_details_fetch_failure)
+        self._details_reply = thread
+        thread.start()
+        self._network_timeout.start(20000)
 
-    def _on_details_reply_finished(self):
+    def _on_details_fetch_success(self, data, _url):
         self._network_timeout.stop()
-        reply = self._details_reply
         self._details_reply = None
         self._pending_mode = None
         self.progress_bar.setVisible(False)
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
 
-        if reply is None:
-            return
-
-        err = reply.error()
-        if err != 0:
-            error_msg = self.tr("Error fetching details: {}").format(reply.errorString())
-            self.status_label.setText(error_msg)
-            QgsMessageLog.logMessage(error_msg, 'Plugin Info Browser', Qgis.Critical)
-            reply.deleteLater()
-            return
-
         try:
-            result = json.loads(bytes(reply.readAll()).decode("utf-8", errors="replace"))
+            result = json.loads(data.decode("utf-8", errors="replace"))
         except Exception as ex:
             self.status_label.setText(self.tr("Error parsing details JSON: {}").format(ex))
-            QgsMessageLog.logMessage(str(ex), 'Plugin Info Browser', Qgis.Critical)
-            reply.deleteLater()
+            QgsMessageLog.logMessage(str(ex), 'Plugin Info Browser', Qgis.MessageLevel.Critical)
             return
 
-        reply.deleteLater()
         if not result:
             self.status_label.setText(self.tr("No detail data was returned."))
             return
 
         self.status_label.setText(self.tr("Details loaded."))
         detail_dialog = PluginDetailDialog(result, self)
-        detail_dialog.exec_()
+        detail_dialog.exec()
 
-    def _on_network_progress(self, received, total):
-        if total and total > 0:
-            if self.progress_bar.maximum() == 0:
-                self.progress_bar.setRange(0, 100)
-            self.progress_bar.setValue(int((received * 100) / total))
-        else:
-            if self.progress_bar.maximum() != 0:
-                self.progress_bar.setRange(0, 0)
+    def _on_details_fetch_failure(self, error_msg, url):
+        self._network_timeout.stop()
+        self._details_reply = None
+        self._pending_mode = None
+        self.progress_bar.setVisible(False)
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        msg = self.tr("Error fetching details: {}").format(error_msg)
+        self.status_label.setText(msg)
+        QgsMessageLog.logMessage(msg, 'Plugin Info Browser', Qgis.MessageLevel.Critical)
 
     def _on_network_timeout(self):
         if self._pending_mode == "plugins" and self._plugins_reply is not None:
-            self._plugins_reply.abort()
-            return
-        if self._pending_mode == "details" and self._details_reply is not None:
-            self._details_reply.abort()
-            return
+            self._plugins_reply.cancel()
+            self._on_plugins_fetch_failure("Request timed out", "")
+        elif self._pending_mode == "details" and self._details_reply is not None:
+            self._details_reply.cancel()
+            self._on_details_fetch_failure("Request timed out", "")

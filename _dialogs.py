@@ -7,7 +7,7 @@ class NumericTableWidgetItem(QtWidgets.QTableWidgetItem):
     """QTableWidgetItem that sorts by numeric UserRole value."""
     def __lt__(self, other):
         try:
-            return float(self.data(Qt.UserRole)) < float(other.data(Qt.UserRole))
+            return float(self.data(Qt.ItemDataRole.UserRole)) < float(other.data(Qt.ItemDataRole.UserRole))
         except (ValueError, TypeError):
             return super().__lt__(other)
 
@@ -34,7 +34,7 @@ class PluginDetailDialog(QtWidgets.QDialog):
         description_browser.setHtml(plugin_data.get('description', 'No description available.'))
         layout.addWidget(description_browser)
 
-        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Close)
+        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Close)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
 

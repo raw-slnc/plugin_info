@@ -14,6 +14,7 @@ class TableMixin:
     _QGIS_LTR_VERSIONS = {
         "2.18", "3.4", "3.10", "3.16", "3.22", "3.28", "3.34", "3.40",
     }
+    _QGIS3_MAX_FALLBACK = "3.99"
 
     def populate_table(self, plugins):
         """Populates the QTableWidget with the fetched plugin data."""
@@ -32,13 +33,19 @@ class TableMixin:
 
             name_item = QtWidgets.QTableWidgetItem(plugin['name'])
             name_item.setToolTip(plugin.get('description', ''))
-            name_item.setData(Qt.UserRole, plugin['url'])
-            name_item.setData(Qt.UserRole + 1, plugin['plugin_id'])
-            name_item.setData(Qt.UserRole + 2, bool(plugin.get('experimental', False)))
-            name_item.setData(Qt.UserRole + 3, bool(plugin.get('deprecated', False)))
-            name_item.setData(Qt.UserRole + 4, plugin.get('create_date', QDate()))
-            name_item.setData(Qt.UserRole + 5, str(plugin.get('qgis_minimum_version', '')).strip())
-            name_item.setData(Qt.UserRole + 7, str(plugin.get('category', '')).strip())
+            name_item.setData(Qt.ItemDataRole.UserRole, plugin['url'])
+            name_item.setData(Qt.ItemDataRole.UserRole + 1, plugin['plugin_id'])
+            name_item.setData(Qt.ItemDataRole.UserRole + 2, bool(plugin.get('experimental', False)))
+            name_item.setData(Qt.ItemDataRole.UserRole + 3, bool(plugin.get('deprecated', False)))
+            name_item.setData(Qt.ItemDataRole.UserRole + 4, plugin.get('create_date', QDate()))
+            plugin_minver = str(plugin.get('qgis_minimum_version', '')).strip()
+            plugin_maxver = self._effective_qgis_maximum_version(
+                plugin_minver,
+                str(plugin.get('qgis_maximum_version', '')).strip(),
+            )
+            name_item.setData(Qt.ItemDataRole.UserRole + 5, plugin_minver)
+            name_item.setData(Qt.ItemDataRole.UserRole + 7, str(plugin.get('category', '')).strip())
+            name_item.setData(Qt.ItemDataRole.UserRole + 10, plugin_maxver)
             name_item.setData(self._ABOUT_DATA_ROLE, str(plugin.get('about', '') or ''))
 
             plugin_id_text = str(plugin.get('plugin_id', '') or '').strip().lower()
@@ -50,10 +57,10 @@ class TableMixin:
             name_item.setData(self._INSTALLED_DATA_ROLE, is_installed)
 
             supports_current = self._is_plugin_compatible_current_qgis(
-                str(plugin.get('qgis_minimum_version', '')).strip(),
-                str(plugin.get('qgis_maximum_version', '')).strip(),
+                plugin_minver,
+                plugin_maxver,
             )
-            name_item.setData(Qt.UserRole + 6, supports_current)
+            name_item.setData(Qt.ItemDataRole.UserRole + 6, supports_current)
             self.table.setItem(row, 0, name_item)
             self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(plugin.get('plugin_id', 'N/A'))))
 
@@ -63,16 +70,16 @@ class TableMixin:
 
             downloads_item = NumericTableWidgetItem()
             downloads_item.setText(f"{downloads_value:,}")
-            downloads_item.setData(Qt.UserRole, downloads_value)
-            downloads_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            downloads_item.setData(Qt.ItemDataRole.UserRole, downloads_value)
+            downloads_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.table.setItem(row, 3, downloads_item)
 
             rating_item = NumericTableWidgetItem()
             stars_n = max(0, min(5, int(round(rating_value))))
             stars = ("★" * stars_n) + ("☆" * (5 - stars_n))
             rating_item.setText(f"{stars} ({rating_value:.1f})")
-            rating_item.setData(Qt.UserRole, rating_value)
-            rating_item.setTextAlignment(Qt.AlignCenter)
+            rating_item.setData(Qt.ItemDataRole.UserRole, rating_value)
+            rating_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.table.setItem(row, 4, rating_item)
 
             self.table.setItem(row, 5, QtWidgets.QTableWidgetItem(plugin['author']))
@@ -100,7 +107,7 @@ class TableMixin:
                     rating_cell.setToolTip(self.tr("Installed plugin"))
 
         self.table.setSortingEnabled(True)
-        self.table.sortByColumn(3, Qt.DescendingOrder)
+        self.table.sortByColumn(3, Qt.SortOrder.DescendingOrder)
         self.filter_table()
         self._on_table_selection_changed()
 
@@ -153,8 +160,18 @@ class TableMixin:
         key = f"{vt[0]}.{vt[1]}"
         return key in cls._QGIS_LTR_VERSIONS
 
-    def _is_plugin_compatible_current_qgis(self, min_version, max_version):
-        current = self._version_tuple(getattr(Qgis, "QGIS_VERSION", ""))
+    @classmethod
+    def _effective_qgis_maximum_version(cls, min_version, max_version):
+        max_version = str(max_version or "").strip()
+        if max_version:
+            return max_version
+        min_v = cls._version_tuple(min_version)
+        if len(min_v) >= 1 and min_v[0] == 3:
+            return cls._QGIS3_MAX_FALLBACK
+        return ""
+
+    def _is_plugin_compatible_with_version(self, selected_version, min_version, max_version):
+        current = self._version_tuple(selected_version)
         if not current:
             return True
         min_v = self._version_tuple(min_version)
@@ -164,6 +181,13 @@ class TableMixin:
         if max_v and current > max_v:
             return False
         return True
+
+    def _is_plugin_compatible_current_qgis(self, min_version, max_version):
+        return self._is_plugin_compatible_with_version(
+            getattr(Qgis, "QGIS_VERSION", ""),
+            min_version,
+            max_version,
+        )
 
     def _refresh_filter_combos(self, plugins):
         selected_minver = self.qgis_min_version_combo.currentData()
@@ -202,7 +226,7 @@ class TableMixin:
 
         self.qgis_min_version_combo.blockSignals(True)
         self.qgis_min_version_combo.clear()
-        self.qgis_min_version_combo.addItem(self.tr("All QGIS min versions"), "")
+        self.qgis_min_version_combo.addItem(self.tr("All target versions"), "")
         for v in min_versions:
             label = f"{v}-ltr" if self._is_ltr_version(v) else v
             self.qgis_min_version_combo.addItem(label, v)

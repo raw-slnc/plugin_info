@@ -24,7 +24,7 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-import sip
+from qgis.PyQt import sip
 
 # Import the code for the DockWidget
 from .plugin_info_dockwidget import PluginInfoDockWidget
@@ -46,7 +46,7 @@ class PluginInfo:
         self.iface = iface
 
         # initialize plugin directory
-        self.plugin_dir = os.path.dirname(__file__) 
+        self.plugin_dir = os.path.dirname(__file__)
 
         # initialize locale
         locale = (QSettings().value('locale/userLocale') or 'en')[:2]
@@ -55,7 +55,7 @@ class PluginInfo:
             'i18n',
             'plugin_info_{}.qm'.format(locale))
 
-        if os.path.exists(locale_path): 
+        if os.path.exists(locale_path):
             self.translator = QTranslator()
             self.translator.load(locale_path)
             QCoreApplication.installTranslator(self.translator)
@@ -65,7 +65,6 @@ class PluginInfo:
         self.menu = self.tr(u'&Plugin Tools')
 
         self.dockwidget = None
-
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -93,7 +92,8 @@ class PluginInfo:
         add_to_toolbar=True,
         status_tip=None,
         whats_this=None,
-        parent=None):
+        parent=None,
+    ):
         """Add a toolbar icon to the toolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
@@ -167,7 +167,7 @@ class PluginInfo:
             callback=self.run,
             parent=self.iface.mainWindow())
 
-    #--------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
@@ -197,8 +197,8 @@ class PluginInfo:
             self.iface.removeDockWidget(self.dockwidget)
             self.dockwidget.deleteLater()
             self.dockwidget = None
- 
-    #--------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
 
     def run(self):
         """Run method that loads and starts the plugin"""
@@ -210,6 +210,6 @@ class PluginInfo:
 
         # show the dockwidget
         # addDockWidget will move it if it's already added elsewhere
-        self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
+        self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dockwidget)
         self.dockwidget.show()
         self.dockwidget.raise_()

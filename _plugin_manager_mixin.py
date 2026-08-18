@@ -9,7 +9,7 @@ class PluginManagerMixin:
     def open_plugin_url(self, item):
         """Opens the plugin homepage in the default browser."""
         name_item = self.table.item(item.row(), 0)
-        url = name_item.data(Qt.UserRole)
+        url = name_item.data(Qt.ItemDataRole.UserRole)
         if url:
             QDesktopServices.openUrl(QUrl(url))
         else:
@@ -85,7 +85,7 @@ class PluginManagerMixin:
         menu = QtWidgets.QMenu()
         selected_items = self.table.selectedItems()
         name_item = self.table.item(selected_items[0].row(), 0)
-        plugin_id = str(name_item.data(Qt.UserRole + 1))
+        plugin_id = str(name_item.data(Qt.ItemDataRole.UserRole + 1))
 
         if plugin_id in self._favorites:
             action = menu.addAction(self.tr("Remove from Favorites"))
@@ -94,4 +94,4 @@ class PluginManagerMixin:
             action = menu.addAction(self.tr("Add to Favorites"))
             action.triggered.connect(lambda: self._add_favorite(plugin_id))
 
-        menu.exec_(self.table.mapToGlobal(pos))
+        menu.exec(self.table.mapToGlobal(pos))
