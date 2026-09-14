@@ -13,14 +13,20 @@ from ._settings_mixin import SettingsMixin
 from ._plugin_manager_mixin import PluginManagerMixin
 
 
+class PluginInfoDock(QtWidgets.QDockWidget):
+    """QGISに格納する標準Dock。ネイティブfloatingは使わない（Closable/Movableのみ）。"""
+
+
 class PluginInfoDockWidget(
     NetworkMixin,
     TableMixin,
     FilterMixin,
     SettingsMixin,
     PluginManagerMixin,
-    QtWidgets.QDockWidget,
+    QtWidgets.QWidget,
 ):
+    """左右分割の中身ウィジェット。ドック/別ウィンドウどちらのコンテナにも付け替え可能。"""
+
     closingPlugin = pyqtSignal()
 
     HEADER_JA_MAP = {
@@ -61,6 +67,8 @@ class PluginInfoDockWidget(
         super(PluginInfoDockWidget, self).__init__(parent)
         self.iface = iface
         self.setWindowTitle(self.tr("Plugin Info Browser"))
+        self._window_mode_callback = None
+        self._container = None   # 現在の格納先（PluginInfoDock または QDialog）
         self._repo_urls = self._build_repository_urls()
         self._repo_try_index = 0
         self._plugins_reply = None
@@ -91,7 +99,9 @@ class PluginInfoDockWidget(
 
     def _setup_ui(self):
         main_widget = QtWidgets.QWidget()
-        self.setWidget(main_widget)
+        outer_layout = QtWidgets.QVBoxLayout(self)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.addWidget(main_widget)
         layout = QtWidgets.QVBoxLayout(main_widget)
 
         # --- Filter group ---
@@ -124,6 +134,9 @@ class PluginInfoDockWidget(
         self.show_favorites_button = QtWidgets.QPushButton(self.tr("Favorites"))
         self.show_favorites_button.setCheckable(True)
         right_created_layout.addWidget(self.show_favorites_button)
+        self.chkWindowMode = QtWidgets.QCheckBox(self.tr("Separate window"))
+        self.chkWindowMode.toggled.connect(self._on_window_mode_toggled)
+        right_created_layout.addWidget(self.chkWindowMode)
         right_created_layout.addStretch(1)
         search_grid_layout.addLayout(right_created_layout, 0, 1)
         search_grid_layout.setColumnStretch(0, 9)
@@ -354,7 +367,7 @@ class PluginInfoDockWidget(
         self.qgis_min_ltr_button.toggled.connect(self._on_qgis_min_ltr_toggled)
         self.category_combo.currentIndexChanged.connect(lambda _: self.filter_table())
         self.rating_filter_combo.currentIndexChanged.connect(self._on_rating_combo_changed)
-        self.close_button.clicked.connect(self.close)
+        self.close_button.clicked.connect(self._on_close_button_clicked)
         self.debug_headers_toggle_button.toggled.connect(self._toggle_debug_headers_panel)
         self.table.cellClicked.connect(self._on_table_cell_clicked)
         self.table.cellEntered.connect(self._on_table_cell_entered)
@@ -494,7 +507,7 @@ class PluginInfoDockWidget(
         else:
             self.debug_headers_toggle_button.setText(self.tr("Show headers"))
 
-    def closeEvent(self, _event):
+    def cleanup(self):
         self._save_filter_toggle_settings()
         self._save_created_since_settings()
         plugins_reply = self._plugins_reply
@@ -503,3 +516,40 @@ class PluginInfoDockWidget(
         details_reply = self._details_reply
         self._details_reply = None
         self._cancel_reply(details_reply)
+
+    def closeEvent(self, event):
+        self.cleanup()
+        self.closingPlugin.emit()
+        event.accept()
+
+    # -- コンテナ付け替え -------------------------------------------------
+
+    def set_window_mode_callback(self, callback):
+        self._window_mode_callback = callback
+
+    def _on_window_mode_toggled(self, checked):
+        if self._window_mode_callback is None:
+            self._set_window_mode_checked(False)
+            return
+        self._window_mode_callback(checked)
+
+    def _set_window_mode_checked(self, checked):
+        self.chkWindowMode.blockSignals(True)
+        self.chkWindowMode.setChecked(checked)
+        self.chkWindowMode.blockSignals(False)
+
+    def attach_dock_widget(self, dock_widget):
+        self._container = dock_widget
+        self._set_window_mode_checked(False)
+        self.show()
+
+    def attach_window_dialog(self, dialog):
+        self._container = dialog
+        self._set_window_mode_checked(True)
+        self.show()
+
+    def _on_close_button_clicked(self):
+        if self._container is not None:
+            self._container.close()
+        else:
+            self.close()

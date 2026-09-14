@@ -21,14 +21,29 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt, QTimer, QObject, QEvent
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
-from qgis.PyQt import sip
+from qgis.PyQt.QtWidgets import QAction, QApplication, QDialog, QDockWidget, QVBoxLayout
 
 # Import the code for the DockWidget
-from .plugin_info_dockwidget import PluginInfoDockWidget
+from .plugin_info_dockwidget import PluginInfoDock, PluginInfoDockWidget
 import os.path
+
+
+class _ToolButtonDoubleClickFilter(QObject):
+    """ツールバーボタンの実ウィジェットに仕込むイベントフィルタ。
+    QAction.triggered はダブルクリックの2回目で必ずしも再発火しない
+    （QAbstractButton側で吸収される）ため、QEvent.MouseButtonDblClick を
+    直接検知する必要がある。"""
+
+    def __init__(self, callback, parent=None):
+        super().__init__(parent)
+        self._callback = callback
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Type.MouseButtonDblClick:
+            self._callback()
+        return False
 
 
 class PluginInfo:
@@ -64,7 +79,20 @@ class PluginInfo:
         self.actions = []
         self.menu = self.tr(u'&Plugin Tools')
 
-        self.dockwidget = None
+        self.dock = None
+        self.dialog = None
+        self.window = None
+        self._switching_container = False
+        self._dblclick_filter = None
+
+        # ツールバーアイコンのシングル/ダブルクリック判定用。シングルクリック
+        # の実行は doubleClickInterval() だけ保留し、その間に実ボタン側で
+        # ダブルクリックが検知されたら（_on_toolbar_double_click）保留を
+        # キャンセルしてトグル動作に切り替える。
+        self._click_timer = QTimer()
+        self._click_timer.setSingleShot(True)
+        self._click_timer.setInterval(QApplication.doubleClickInterval())
+        self._click_timer.timeout.connect(self.run)
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -161,11 +189,18 @@ class PluginInfo:
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
         icon_path = os.path.join(os.path.dirname(__file__), 'icon.png')
-        self.add_action(
+        action = self.add_action(
             icon_path,
             text=self.tr(u'Browse QGIS Plugins'),
-            callback=self.run,
+            callback=self._on_action_triggered,
             parent=self.iface.mainWindow())
+
+        button = self.iface.pluginToolBar().widgetForAction(action)
+        if button is not None:
+            self._dblclick_filter = _ToolButtonDoubleClickFilter(
+                self._on_toolbar_double_click, button
+            )
+            button.installEventFilter(self._dblclick_filter)
 
 # --------------------------------------------------------------------------
 
@@ -175,41 +210,157 @@ class PluginInfo:
         # anything special here. The reference is maintained.
         pass
 
+    def _on_action_triggered(self):
+        """ツールバーアイコンのクリックを処理する。すぐには実行せず、
+        doubleClickInterval()の間だけ保留する。その間にダブルクリックが
+        検知されれば（_on_toolbar_double_click）保留はキャンセルされる。"""
+        self._click_timer.start()
+
+    def _on_toolbar_double_click(self):
+        """ツールバーの実ボタンでダブルクリックが検知されたとき（イベント
+        フィルタ経由）。保留中のシングルクリック表示をキャンセルし、
+        「別ウィンドウ」チェックボックスをトグルする。"""
+        self._click_timer.stop()
+        self._toggle_window_mode()
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
+
+        self._click_timer.stop()
+        self._dblclick_filter = None
 
         for action in self.actions:
             self.iface.removePluginMenu(
                 self.tr(u'&Plugin Tools'),
                 action)
             self.iface.removeToolBarIcon(action)
+        self.actions = []
 
-        # Properly clean up the dock widget if it exists
-        if self.dockwidget:
-            # Disconnect signal to avoid issues during unload
-            try:
-                self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
-            except (TypeError, RuntimeError):
-                pass
+        if self.window:
+            self.window.cleanup()
+        if self.dialog:
+            self._save_dialog_geometry()
+            self.dialog.hide()
+            self.dialog.deleteLater()
+            self.dialog = None
+        if self.dock:
+            self.iface.removeDockWidget(self.dock)
+            self.dock.deleteLater()
+            self.dock = None
+        self.window = None
 
-            # Remove from QGIS interface and delete
-            self.iface.removeDockWidget(self.dockwidget)
-            self.dockwidget.deleteLater()
-            self.dockwidget = None
+# --------------------------------------------------------------------------
+# コンテナ生成 / 切り替え（compartment_compassと同じ方式）
+# --------------------------------------------------------------------------
+
+    def _ensure_window(self):
+        if self.window is None:
+            self.window = PluginInfoDockWidget(self.iface)
+            self.window.set_window_mode_callback(self._set_window_mode)
+            self.window.closingPlugin.connect(self.onClosePlugin)
+
+    def _create_dock(self):
+        if self.dock is not None:
+            return
+        self._ensure_window()
+        self.dock = PluginInfoDock(self.tr('Plugin Info Browser'), self.iface.mainWindow())
+        self.dock.setObjectName('PluginInfoDock')
+        self.dock.setWidget(self.window)
+        self.window.attach_dock_widget(self.dock)
+        self.dock.setAllowedAreas(
+            Qt.DockWidgetArea.LeftDockWidgetArea
+            | Qt.DockWidgetArea.RightDockWidgetArea
+        )
+        # ネイティブ floating は無効（フロート⇔格納の遷移で透過残像バグの実績があるため）
+        self.dock.setFeatures(
+            QDockWidget.DockWidgetFeature.DockWidgetClosable
+            | QDockWidget.DockWidgetFeature.DockWidgetMovable
+        )
+        self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock)
+
+    def _create_dialog(self):
+        if self.dialog is not None:
+            return
+        self._ensure_window()
+        self.dialog = QDialog(None, Qt.WindowType.Window)
+        self.dialog.setObjectName('PluginInfoWindow')
+        self.dialog.setWindowTitle(self.tr('Plugin Info Browser'))
+        self.dialog.setWindowIcon(QIcon(os.path.join(self.plugin_dir, 'icon.png')))
+        layout = QVBoxLayout(self.dialog)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.window)
+        self.window.attach_window_dialog(self.dialog)
+        self.window.show()
+        geometry = QSettings().value('plugin_info/window_geometry', None)
+        if geometry:
+            self.dialog.restoreGeometry(geometry)
+        else:
+            self.dialog.resize(self.window.minimumSizeHint())
+        self.dialog.finished.connect(self._on_dialog_finished)
+
+    def _save_dialog_geometry(self):
+        if self.dialog is not None:
+            QSettings().setValue(
+                'plugin_info/window_geometry', self.dialog.saveGeometry()
+            )
+
+    def _set_window_mode(self, enabled):
+        """「別ウィンドウ」チェックボックスのトグルで呼ばれる。実体（self.window）を
+        ドックと QDialog の間で付け替え、使わない側のコンテナは破棄する。"""
+        self._ensure_window()
+        self._switching_container = True
+        try:
+            if enabled:
+                if self.dock is not None:
+                    self.dock.setWidget(None)
+                    self.iface.removeDockWidget(self.dock)
+                    self.dock.deleteLater()
+                    self.dock = None
+                self._create_dialog()
+                self.dialog.show()
+                self.dialog.raise_()
+                self.dialog.activateWindow()
+            else:
+                if self.dialog is not None:
+                    self._save_dialog_geometry()
+                    layout = self.dialog.layout()
+                    if layout is not None:
+                        layout.removeWidget(self.window)
+                    self.window.setParent(None)
+                    self.dialog.hide()
+                    self.dialog.deleteLater()
+                    self.dialog = None
+                self._create_dock()
+                self.window.show()
+                self.dock.show()
+                self.dock.raise_()
+        finally:
+            self._switching_container = False
+
+    def _on_dialog_finished(self, *_args):
+        if self._switching_container or self.window is None:
+            return
+        self._save_dialog_geometry()
+
+    def _toggle_window_mode(self):
+        currently_separate = self.dialog is not None
+        self._set_window_mode(not currently_separate)
 
 # --------------------------------------------------------------------------
 
     def run(self):
-        """Run method that loads and starts the plugin"""
-        # Create the dockwidget if it doesn't exist or has been deleted
-        if self.dockwidget is None or sip.isdeleted(self.dockwidget):
-            self.dockwidget = PluginInfoDockWidget(self.iface)
-            # connect to provide cleanup on closing of dockwidget
-            self.dockwidget.closingPlugin.connect(self.onClosePlugin)
+        """プラグインを実行する。ドックまたは別ウィンドウを表示する。"""
+        if self.dialog is not None:
+            self.dialog.show()
+            self.dialog.raise_()
+            self.dialog.activateWindow()
+            return
 
-        # show the dockwidget
-        # addDockWidget will move it if it's already added elsewhere
-        self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dockwidget)
-        self.dockwidget.show()
-        self.dockwidget.raise_()
+        if self.dock is None:
+            self._create_dock()
+
+        if self.dock.isVisible():
+            self.dock.raise_()
+        else:
+            self.dock.show()
+            self.dock.raise_()
