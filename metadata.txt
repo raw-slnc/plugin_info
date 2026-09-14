@@ -14,7 +14,7 @@ repository=https://github.com/raw-slnc/plugin_info
 # End of mandatory metadata
 
 changelog=
-    1.0.1 - Changed display format
+    1.0.1 - Changed display format: the panel can now be toggled between docked and a separate standalone window (double-click the toolbar icon), instead of always being a QDockWidget
     1.0.0 - QGIS 4.x support (PyQt6 migration; scoped Qt/Qgis enums; sip import via qgis.PyQt; replaced QgsNetworkAccessManager with urllib+QThread fetch to avoid Qt6 SSL issues)
     0.1.5 - Final QGIS 3.x release. Explicitly declare qgisMaximumVersion=3.99 to lock the QGIS 3.x compatibility upper bound; QGIS 4.x support continues in the separate 1.0.0 line (behavior unchanged; the repository already applied this implicit bound)
     0.1.4 - Fix ModuleNotFoundError on Windows QGIS: fall back to xml.etree.ElementTree when defusedxml is unavailable (defusedxml is not bundled with Windows QGIS Python)

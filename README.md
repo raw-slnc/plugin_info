@@ -17,13 +17,15 @@ A QGIS plugin that fetches the official QGIS plugin repository and displays all 
 - **Double-click** a plugin name: opens Plugin Manager and copies the plugin name to clipboard
 - **Right-click**: add/remove from Favorites
 - About text preview panel with link to developer page
+- Toolbar icon: single-click opens/shows the panel; **double-click** toggles between a docked panel and a separate, independent window (same as the "Separate window" checkbox in the panel)
 
 ## Usage
 
-1. Open the plugin from the Vector menu or toolbar.
+1. Open the plugin from the **Plugin Tools** menu or the Plugins toolbar.
 2. The plugin list loads automatically from the repository.
 3. Use the filter controls to narrow down results.
 4. Double-click a plugin name to open the Plugin Manager — the name is already copied to your clipboard, so you can paste it into the search field.
+5. Check **Separate window** (or double-click the toolbar icon) to pop the panel out into its own window that can be moved behind or in front of the QGIS main window; uncheck it (or double-click the icon again) to dock it back.
 
 ## Installation
 
@@ -31,7 +33,7 @@ Install via QGIS Plugin Manager (search for "Plugin Info Browser"), or download 
 
 ## Requirements
 
-- QGIS 3.16 or later
+- QGIS 4.0 or later
 - Internet connection (to fetch the plugin repository)
 
 ## Support
