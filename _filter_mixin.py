@@ -10,8 +10,6 @@ class FilterMixin:
         exclude_experimental = self.exclude_experimental_button.isChecked()
         exclude_deprecated = self.exclude_deprecated_button.isChecked()
         only_experimental = self.only_experimental_button.isChecked()
-        rating_mode = self._rating_mode
-        rating_value = self._rating_value
         selected_minver = str(self.qgis_min_version_combo.currentData() or "")
         selected_category = str(self.category_combo.currentData() or "")
         use_created_since = self.created_since_checkbox.isChecked()
@@ -29,7 +27,6 @@ class FilterMixin:
             row_create_date = self.table.item(i, 0).data(Qt.UserRole + 4)
             row_minver = str(self.table.item(i, 0).data(Qt.UserRole + 5) or "")
             row_category = str(self.table.item(i, 0).data(Qt.UserRole + 7) or "")
-            row_rating = float(self.table.item(i, 4).data(Qt.UserRole) or 0.0)
             row_id = str(self.table.item(i, 0).data(Qt.UserRole + 1))
 
             match_text = (
@@ -38,12 +35,6 @@ class FilterMixin:
                 or search_term in version_text
                 or search_term in author_text
             )
-
-            rating_match = True
-            if rating_mode == "min":
-                rating_match = row_rating >= rating_value
-            elif rating_mode == "max":
-                rating_match = row_rating <= rating_value
 
             created_match = True
             if use_created_since:
@@ -62,7 +53,6 @@ class FilterMixin:
                 and not (exclude_experimental and is_experimental)
                 and not (exclude_deprecated and is_deprecated)
                 and (not only_experimental or is_experimental)
-                and rating_match
                 and created_match
                 and minver_match
                 and category_match
@@ -73,18 +63,6 @@ class FilterMixin:
                 visible_rows += 1
 
         self.status_label.setText(self.tr("{} plugins matching filter.").format(visible_rows))
-
-    def _on_rating_combo_changed(self, _index):
-        selected = self.rating_filter_combo.currentData()
-        if not selected:
-            self._rating_mode = "all"
-            self._rating_value = 0.0
-            self.filter_table()
-            return
-        mode, value = selected
-        self._rating_mode = str(mode)
-        self._rating_value = float(value or 0.0)
-        self.filter_table()
 
     def _on_created_since_toggled(self, checked):
         self.created_since_date_edit.setEnabled(bool(checked))

@@ -69,8 +69,6 @@ class PluginInfoDockWidget(
         self._pending_mode = None
         self._plugins_cache = []
         self._about_source_text = ""
-        self._rating_mode = "all"
-        self._rating_value = 0.0
         self._network_timeout = QTimer(self)
         self._network_timeout.setSingleShot(True)
         self._network_timeout.timeout.connect(self._on_network_timeout)
@@ -169,24 +167,8 @@ class PluginInfoDockWidget(
         minver_controls_layout.addStretch(1)
         button_grid_layout.addLayout(minver_controls_layout, 0, 1)
 
-        # Rating controls (left column)
+        # Status and experimental controls (left column)
         setting_controls_layout = QtWidgets.QHBoxLayout()
-        setting_controls_layout.addWidget(QtWidgets.QLabel(self.tr("Rating:")))
-        self.rating_filter_combo = QtWidgets.QComboBox()
-        for label, mode, value in [
-            ("All Ratings", "all", 0.0),
-            ("4.5+", "min", 4.5),
-            ("4.0+", "min", 4.0),
-            ("3.0+", "min", 3.0),
-            ("2.0+", "min", 2.0),
-            ("1.0+", "min", 1.0),
-            ("1.0-", "max", 1.0),
-            ("2.0-", "max", 2.0),
-            ("3.0-", "max", 3.0),
-            ("4.5-", "max", 4.5),
-        ]:
-            self.rating_filter_combo.addItem(self.tr(label), (mode, float(value)))
-        setting_controls_layout.addWidget(self.rating_filter_combo)
         self.only_experimental_button = QtWidgets.QPushButton(self.tr("Only experimental"))
         self.only_experimental_button.setCheckable(True)
         self.only_experimental_button.setChecked(False)
@@ -232,7 +214,7 @@ class PluginInfoDockWidget(
         self.table.setColumnCount(6)
         self.table.setHorizontalHeaderLabels([
             self.tr("Name"), self.tr("plugin_id"), self.tr("Version"),
-            self.tr("Download"), self.tr("Rating"), self.tr("Author")
+            self.tr("Download"), self.tr("Status"), self.tr("Author")
         ])
         self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
@@ -353,7 +335,6 @@ class PluginInfoDockWidget(
         self.qgis_min_version_combo.currentIndexChanged.connect(lambda _: self.filter_table())
         self.qgis_min_ltr_button.toggled.connect(self._on_qgis_min_ltr_toggled)
         self.category_combo.currentIndexChanged.connect(lambda _: self.filter_table())
-        self.rating_filter_combo.currentIndexChanged.connect(self._on_rating_combo_changed)
         self.close_button.clicked.connect(self.close)
         self.debug_headers_toggle_button.toggled.connect(self._toggle_debug_headers_panel)
         self.table.cellClicked.connect(self._on_table_cell_clicked)

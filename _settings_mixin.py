@@ -63,10 +63,12 @@ class SettingsMixin:
     def _add_favorite(self, plugin_id):
         self._favorites.add(str(plugin_id))
         self._save_favorites()
+        self._refresh_status_column()
         self.filter_table()
 
     def _remove_favorite(self, plugin_id):
         if str(plugin_id) in self._favorites:
             self._favorites.remove(str(plugin_id))
             self._save_favorites()
+            self._refresh_status_column()
             self.filter_table()

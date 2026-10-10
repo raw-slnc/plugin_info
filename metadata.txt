@@ -3,18 +3,19 @@ name=Plugin Info Browser
 qgisMinimumVersion=3.16
 qgisMaximumVersion=3.99
 description=Browse and filter QGIS plugins by metadata and compatibility.
-version=0.1.5
+version=0.1.6
 author=Hideharu Masai
 email=hideharumasai@void.mints.ne.jp
 
-about=Plugin Info Browser fetches the official QGIS plugin repository and displays all available plugins in a filterable table. You can filter by name, author, rating, QGIS minimum version, category, creation date, and experimental/deprecated status. Double-clicking a plugin opens the Plugin Manager and copies the plugin name to your clipboard for easy search. Installed plugins are highlighted in the list. Support: https://paypal.me/rawslnc
+about=Plugin Info Browser fetches the official QGIS plugin repository and displays all available plugins in a filterable table. You can filter by name, author, QGIS minimum version, category, creation date, and experimental/deprecated status. Double-clicking a plugin opens the Plugin Manager and copies the plugin name to your clipboard for easy search. Installed and favorite plugins are shown in the Status column. Support: https://paypal.me/rawslnc
 
 tracker=https://github.com/raw-slnc/plugin_info/issues
 repository=https://github.com/raw-slnc/plugin_info
 # End of mandatory metadata
 
 changelog=
-    0.1.5 - Final QGIS 3.x release. Explicitly declare qgisMaximumVersion=3.99 to lock the QGIS 3.x compatibility upper bound; QGIS 4.x support continues in the separate 1.0.0 line (behavior unchanged; the repository already applied this implicit bound)
+    0.1.6 - [IMPORTANT] Removed the star rating display after the rating system was retired. Installed and favorite plugins are now shown in a Status column, keeping the plugin list focused on practical selection.
+    0.1.5 - Final feature release for QGIS 3.x. Explicitly declare qgisMaximumVersion=3.99 to lock the QGIS 3.x compatibility upper bound; QGIS 4.x support continues in the separate 1.0.0 line. Maintenance updates may still be made when required by QGIS plugin repository specifications.
     0.1.4 - Fix ModuleNotFoundError on Windows QGIS: fall back to xml.etree.ElementTree when defusedxml is unavailable (defusedxml is not bundled with Windows QGIS Python)
     0.1.3 - Fix bandit security scan warnings: replace xml.etree.ElementTree with defusedxml for network XML parsing (B405/B314); suppress intentional bare-except patterns with nosec B110/B112
     0.1.2 - Renamed UI title to "Plugin Info Browser"; Moved toolbar and menu registration from Vector to General (Plugins toolbar/menu); Updated plugin icon

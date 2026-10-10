@@ -26,7 +26,6 @@ class TableMixin:
 
         for row, plugin in enumerate(plugins):
             downloads_value = int(plugin.get('downloads', 0) or 0)
-            rating_value = float(plugin.get('rating', 0.0) or 0.0)
             version_value = str(plugin.get('version', 'N/A'))
             version_display = version_value if len(version_value) <= 8 else f"{version_value[:5]}..."
 
@@ -67,13 +66,10 @@ class TableMixin:
             downloads_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             self.table.setItem(row, 3, downloads_item)
 
-            rating_item = NumericTableWidgetItem()
-            stars_n = max(0, min(5, int(round(rating_value))))
-            stars = ("★" * stars_n) + ("☆" * (5 - stars_n))
-            rating_item.setText(f"{stars} ({rating_value:.1f})")
-            rating_item.setData(Qt.UserRole, rating_value)
-            rating_item.setTextAlignment(Qt.AlignCenter)
-            self.table.setItem(row, 4, rating_item)
+            status_item = QtWidgets.QTableWidgetItem()
+            status_item.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(row, 4, status_item)
+            self._update_row_status_item(row)
 
             self.table.setItem(row, 5, QtWidgets.QTableWidgetItem(plugin['author']))
 
@@ -93,16 +89,47 @@ class TableMixin:
                 if item is not None:
                     item.setBackground(row_color)
 
-            if is_installed:
-                rating_cell = self.table.item(row, 4)
-                if rating_cell is not None:
-                    rating_cell.setForeground(QColor(255, 80, 40))
-                    rating_cell.setToolTip(self.tr("Installed plugin"))
-
         self.table.setSortingEnabled(True)
         self.table.sortByColumn(3, Qt.DescendingOrder)
         self.filter_table()
         self._on_table_selection_changed()
+
+    def _update_row_status_item(self, row):
+        name_item = self.table.item(row, 0)
+        status_item = self.table.item(row, 4)
+        if name_item is None or status_item is None:
+            return
+
+        plugin_id = str(name_item.data(Qt.UserRole + 1))
+        is_installed = bool(name_item.data(self._INSTALLED_DATA_ROLE))
+        is_favorite = plugin_id in self._favorites
+        labels = []
+        tooltips = []
+        if is_installed:
+            labels.append(self.tr("Inst."))
+            tooltips.append(self.tr("Installed plugin"))
+        if is_favorite:
+            labels.append(self.tr("Fav."))
+            tooltips.append(self.tr("Favorite plugin"))
+
+        status_item.setText(" / ".join(labels))
+        status_item.setToolTip("\n".join(tooltips))
+        if is_installed and is_favorite:
+            status_item.setForeground(QColor(126, 87, 194))
+            status_item.setData(Qt.UserRole, 3)
+        elif is_installed:
+            status_item.setForeground(QColor(46, 125, 50))
+            status_item.setData(Qt.UserRole, 2)
+        elif is_favorite:
+            status_item.setForeground(QColor(21, 101, 192))
+            status_item.setData(Qt.UserRole, 1)
+        else:
+            status_item.setForeground(QColor(80, 80, 80))
+            status_item.setData(Qt.UserRole, 0)
+
+    def _refresh_status_column(self):
+        for row in range(self.table.rowCount()):
+            self._update_row_status_item(row)
 
     @staticmethod
     def _parse_metadata_file(path):
