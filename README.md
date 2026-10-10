@@ -8,12 +8,12 @@ A QGIS plugin that fetches the official QGIS plugin repository and displays all 
 
 - Fetches live data from the QGIS official plugin repository
 - Filter by name, author, plugin ID, or version text
-- Filter by rating, QGIS minimum version, category, creation date
+- Filter by QGIS minimum version, category, creation date
 - Toggle buttons: Exclude experimental / Exclude deprecated / Only experimental
 - LTR-only mode for QGIS minimum version filter
 - Favorites list (persisted across sessions)
+- Status column for installed and favorite plugins
 - Row color coding: Compatible (blue) / Experimental (green) / Incompatible (yellow) / Deprecated (red)
-- Installed plugins highlighted in the rating column
 - **Double-click** a plugin name: opens Plugin Manager and copies the plugin name to clipboard
 - **Right-click**: add/remove from Favorites
 - About text preview panel with link to developer page
