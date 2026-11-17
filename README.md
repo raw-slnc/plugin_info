@@ -33,7 +33,7 @@ Install via QGIS Plugin Manager (search for "Plugin Info Browser"), or download 
 
 ## Requirements
 
-- QGIS 4.0 or later
+- QGIS 3.44 or later (including QGIS 4.x)
 - Internet connection (to fetch the plugin repository)
 
 ## Support

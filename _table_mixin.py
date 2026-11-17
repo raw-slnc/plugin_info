@@ -13,6 +13,7 @@ from ._dialogs import NumericTableWidgetItem
 class TableMixin:
     _QGIS_LTR_VERSIONS = {
         "2.18", "3.4", "3.10", "3.16", "3.22", "3.28", "3.34", "3.40",
+        "3.44", "4.4",
     }
     _QGIS3_MAX_FALLBACK = "3.99"
 
