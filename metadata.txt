@@ -14,7 +14,7 @@ repository=https://github.com/raw-slnc/plugin_info
 # End of mandatory metadata
 
 changelog=
-    2.0.0 - [IMPORTANT] Now also runs on QGIS 3.44 and later, so a single version covers QGIS 3.44 through 4.x. QGIS 3.x users update from 0.1.5 to this version and gain the changes listed under 1.x: the panel can be docked or opened as a separate window (double-click the toolbar icon), and installed and favorite plugins are shown in a Status column in place of the retired star rating. The LTR filter for the QGIS minimum version now also covers 3.44 and 4.4.
+    2.0.0 - [IMPORTANT] Now also runs on QGIS 3.44 and later. QGIS 3.x users can update from 0.1.5 to this version and also get the changes from 1.x: the panel can be docked or opened as a separate window (double-click the toolbar icon), and installed and favorite plugins are shown in the Status column in place of the retired star rating. Updated the LTR filter for the QGIS minimum version.
     1.0.2 - [IMPORTANT] Removed the star rating display after the rating system was retired. Installed and favorite plugins are now shown in a Status column, keeping the plugin list focused on practical selection.
     1.0.1 - Changed display format: the panel can now be toggled between docked and a separate standalone window (double-click the toolbar icon), instead of always being a QDockWidget
     1.0.0 - QGIS 4.x support (PyQt6 migration; scoped Qt/Qgis enums; sip import via qgis.PyQt; replaced QgsNetworkAccessManager with urllib+QThread fetch to avoid Qt6 SSL issues)

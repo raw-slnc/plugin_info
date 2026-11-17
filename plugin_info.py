@@ -28,6 +28,7 @@ from qgis.PyQt.QtWidgets import QAction, QApplication, QDialog, QDockWidget, QVB
 # Import the code for the DockWidget
 from .plugin_info_dockwidget import PluginInfoDock, PluginInfoDockWidget
 import os.path
+import sys
 
 
 class _ToolButtonDoubleClickFilter(QObject):
@@ -282,7 +283,24 @@ class PluginInfo:
         if self.dialog is not None:
             return
         self._ensure_window()
-        self.dialog = QDialog(None, Qt.WindowType.Window)
+        flags = Qt.WindowType.Window
+        if sys.platform == "darwin":
+            # macOS: Qt は普通の窓を全画面の「主」窓（NSWindowCollectionBehavior
+            # FullScreenPrimary）にするため、QGIS が全画面のとき別ウィンドウが別の
+            # 全画面スペースに出る。CustomizeWindowHint を付けると「補助」窓になり、
+            # 全画面の QGIS と同じスペースに出る（緑のボタンは全画面でなく拡大）。
+            # CustomizeWindowHint を付けるとタイトルバーとボタンの指定が要る。
+            # 既定のフラグに足すと WindowFullscreenButtonHint（全画面ボタン）が
+            # 残り「主」窓のままになるので、一から組み立てる。
+            flags = (
+                Qt.WindowType.Window
+                | Qt.WindowType.CustomizeWindowHint
+                | Qt.WindowType.WindowTitleHint
+                | Qt.WindowType.WindowSystemMenuHint
+                | Qt.WindowType.WindowMinMaxButtonsHint
+                | Qt.WindowType.WindowCloseButtonHint
+            )
+        self.dialog = QDialog(None, flags)
         self.dialog.setObjectName('PluginInfoWindow')
         self.dialog.setWindowTitle(self.tr('Plugin Info Browser'))
         self.dialog.setWindowIcon(QIcon(os.path.join(self.plugin_dir, 'icon.png')))
